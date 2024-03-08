@@ -22,7 +22,9 @@ void PROTOX_IRQHandler(){
     static uint8_t source = UINT8_MAX;
     uint8_t reg_data = 0;
     static uint8_t pre_a_ready = 0;
+
     reg_data = *(uint8_t *)PROTO_DATA_OUT_REG;
+
     if(i >= length){//принят весь пакет
         //fill struct msg
         s_msg_in.lenght = length + PROTO_PRE_AMBLE_LENGHT;
@@ -31,6 +33,7 @@ void PROTOX_IRQHandler(){
         s_msg_in.data_prt = PROTO_BUFF_IN_PTR;
         global_is_buff_full =1;
     }
+
     if(i >= length || global_is_tim_expired){//зануляем при приеме или истечении времени
         crc_tmp = PROTO_PRE_ABL_CRC;
         length = UINT8_MAX;
@@ -42,15 +45,18 @@ void PROTOX_IRQHandler(){
         global_is_start_data = 0;
         global_is_tim_expired=0;
     }
+
     if(!global_is_start_data){//size adrr_s addr_d
         get_pre_ambl = (get_pre_ambl << 8) | reg_data;
+
         if(get_pre_ambl == PROTO_PRE_ABML ){//ловим преамбулу
             pre_a_ready = 1;
             tim1_init(TIM1_MSEC_PSK,PROTO_TIME_2_EXEED_MS);
             TIM1_ENABLE();
         }
         //если cчитан размер и аддр1,2
-        if(get_pre_ambl & (PROTO_PRE_AMBLE_3<<(3*8)) && pre_a_ready ){
+        uint8_t tmp = get_pre_ambl>>(8*3);
+        if(tmp == PROTO_PRE_AMBLE_3 && pre_a_ready ){
             pre_a_ready = 0;
             if((uint8_t)get_pre_ambl == PROTO_DEVICE_ADDRES){//если приемник мы
                 source = get_pre_ambl>>(8*1);
